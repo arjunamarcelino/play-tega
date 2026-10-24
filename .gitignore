@@ -1,0 +1,21 @@
+# Documentation / specs — do NOT commit
+docs/
+
+# Dependencies
+node_modules/
+
+# Env files (keep the examples)
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Logs
+*.log
+npm-debug.log*

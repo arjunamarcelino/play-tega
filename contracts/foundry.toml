@@ -1,0 +1,17 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+solc = "0.8.24"              # matches locked ^0.8.24; pin for reproducible verification
+evm_version = "cancun"       # safe floor + 0.8.24 default (Prague is live on testnet but needs solc >=0.8.27)
+optimizer = true
+optimizer_runs = 200
+# --- verification-reliability settings (Foundry keys; equivalent to the monad-developers/foundry-monad template) ---
+bytecode_hash = "none"       # drop the IPFS/metadata hash that otherwise causes bytecode mismatch on verify
+cbor_metadata = true         # keep CBOR metadata for source verification
+use_literal_content = true   # embed literal source so Sourcify/explorer verification is deterministic
+
+[rpc_endpoints]
+monad = "${MONAD_RPC_URL}"   # enables `forge script --rpc-url monad` later; not needed for `forge build`
+
+# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
