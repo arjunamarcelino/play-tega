@@ -18,7 +18,7 @@ abstract contract TegaTestBase is Test {
     address internal p2 = makeAddr("p2");
     address internal stranger = makeAddr("stranger");
 
-    // Mirror of Tega constants (readability; asserted against the contract in TegaConstants).
+    // Mirror of Tega constants (readability; asserted against the contract in TegaLifecycleTest).
     uint256 internal constant STAKE = 5_000_000;
     uint8 internal constant MAX_ROUNDS = 8;
     uint8 internal constant MIN_ROUNDS = 3;
@@ -67,7 +67,14 @@ abstract contract TegaTestBase is Test {
         tega.commit(id, _commitHash(id, round, who, c, salt));
     }
 
-    function _reveal(uint256 id, uint8, /* round (symmetry with _commit) */ address who, Tega.Choice c, bytes32 salt)
+    function _reveal(
+        uint256 id,
+        uint8,
+        /* round (symmetry with _commit) */
+        address who,
+        Tega.Choice c,
+        bytes32 salt
+    )
         internal
     {
         vm.prank(who);
@@ -120,7 +127,7 @@ abstract contract TegaTestBase is Test {
     /// @dev payout1 + payout2 + jackpot == 2*STAKE. Valid for a single-match context
     ///      (fresh contract, one match) since `jackpot` is global.
     function _assertConservation(uint256 id) internal view {
-        (,,,,,,, , int256 s1, int256 s2) = tega.matches(id);
+        (,,,,,,,, int256 s1, int256 s2) = tega.matches(id);
         assertEq(_payout(s1) + _payout(s2) + tega.jackpot(), 2 * STAKE, "conservation");
     }
 
@@ -139,6 +146,6 @@ abstract contract TegaTestBase is Test {
     }
 
     function _scores(uint256 id) internal view returns (int256 s1, int256 s2) {
-        (,,,,,,, , s1, s2) = tega.matches(id);
+        (,,,,,,,, s1, s2) = tega.matches(id);
     }
 }

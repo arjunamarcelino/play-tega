@@ -62,6 +62,18 @@ contract TegaLifecycleTest is TegaTestBase {
         assertTrue(tega.hasRole(tega.TREASURER_ROLE(), admin));
     }
 
+    /// @dev Guard against the test mirror drifting from the real contract constants.
+    function test_Constants_MirrorContract() public view {
+        assertEq(tega.STAKE(), STAKE);
+        assertEq(tega.MAX_ROUNDS(), MAX_ROUNDS);
+        assertEq(tega.MIN_ROUNDS(), MIN_ROUNDS);
+        assertEq(tega.END_PROB(), END_PROB);
+        assertEq(tega.COMMIT_WIN(), COMMIT_WIN);
+        assertEq(tega.REVEAL_WIN(), REVEAL_WIN);
+        assertEq(tega.TREASURER_ROLE(), TREASURER_ROLE);
+        assertEq(tega.DEFAULT_ADMIN_ROLE(), DEFAULT_ADMIN_ROLE);
+    }
+
     // ---- reputation / trustScore ----
     function test_TrustScore_DefaultsTo100() public view {
         assertEq(tega.trustScore(stranger), 100, "no history defaults to 100");

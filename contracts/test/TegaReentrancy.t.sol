@@ -65,9 +65,7 @@ contract TegaReentrancyTest is TegaTestBase {
         et.grantRole(TREASURER_ROLE, address(evil));
 
         address rec = makeAddr("rec");
-        evil.scheduleReenter(
-            ERC20Reentrant.Type.Before, address(et), abi.encodeCall(et.distributeJackpot, (rec, 1))
-        );
+        evil.scheduleReenter(ERC20Reentrant.Type.Before, address(et), abi.encodeCall(et.distributeJackpot, (rec, 1)));
         vm.expectRevert(ReentrancyGuard.ReentrancyGuardReentrantCall.selector);
         vm.prank(admin);
         et.distributeJackpot(rec, 1);
