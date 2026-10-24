@@ -109,12 +109,32 @@ forge test             # run tests
 forge fmt              # format
 ```
 
-### Deploy (later; via forge script)
+### Deploy
+
+`script/Deploy.s.sol` deploys **only `Tega`** (the USDC stake token already exists on-chain). It defaults the stake token to devnads test USDC and the admin/treasurer to the deployer.
 
 ```shell
-# token = USDC on the target network; admin = treasurer multisig
-forge script script/Deploy.s.sol:Deploy --rpc-url monad --account <keystore> --broadcast
+cp .env.example .env     # set MONAD_RPC_URL + a BURNER PRIVATE_KEY (testnet only)
+make deploy-testnet      # broadcast to Monad testnet (10143) + attempt Sourcify verification
 ```
+
+`make deploy-testnet` expands to:
+
+```shell
+forge script script/Deploy.s.sol:Deploy --rpc-url $MONAD_RPC_URL --broadcast \
+  --verify --verifier sourcify --verifier-url https://sourcify-api-monad.blockvision.org
+```
+
+Encrypted-keystore alternative (key never hits disk in plaintext):
+
+```shell
+cast wallet import tega-burner --interactive
+forge script script/Deploy.s.sol:Deploy --rpc-url monad --account tega-burner --broadcast
+```
+
+**Env overrides** (optional): `USDC_ADDRESS` (e.g. mainnet USDC for a mainnet deploy) · `ADMIN_ADDRESS` (e.g. a treasurer multisig). Fund the deployer with testnet **MON** for gas first (`cast wallet address --private-key $PRIVATE_KEY`, then the [faucet](https://faucet.monad.xyz)).
+
+After deploy, paste the printed address into `web/.env.local` (`NEXT_PUBLIC_CONTRACT_ADDRESS`) and run `make abi` to refresh `web/lib/tega/abi.ts`. See the root [README deploy section](../README.md#deploy-to-monad-testnet).
 
 ### Stake token (USDC) — passed to the constructor per network
 
