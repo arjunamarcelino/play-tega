@@ -1,5 +1,5 @@
 import { bytesToHex, encodePacked, isHex, keccak256, type Address, type Hex } from "viem";
-import type { PlayableChoice } from "./types";
+import { Choice, type PlayableChoice } from "./types";
 
 /**
  * Cryptographically secure 32-byte salt, 0x-prefixed. Browser-only — call from an
@@ -40,7 +40,13 @@ const SALT_PREFIX = "tega";
 const saltKey = (player: Address, id: bigint, round: number) =>
   `${SALT_PREFIX}:${player.toLowerCase()}:${id.toString()}:${round}`;
 
-type SaltRecord = { v: 1; salt: Hex; savedAt: number };
+// v1 = salt only (debug console); v2 also stores the committed choice so the play
+// screen can AUTO-reveal on phase flip without re-prompting. Both are read by loadSalt.
+type SaltRecord = { v: 1; salt: Hex; savedAt: number } | { v: 2; salt: Hex; choice: PlayableChoice; savedAt: number };
+
+function isPlayable(c: unknown): c is PlayableChoice {
+  return c === Choice.Bagi || c === Choice.Steal;
+}
 
 function hasStorage(): boolean {
   try {
@@ -69,8 +75,42 @@ export function loadSalt(player: Address, id: bigint, round: number): Hex | null
     const raw = window.localStorage.getItem(saltKey(player, id, round));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<SaltRecord>;
-    if (parsed.v === 1 && typeof parsed.salt === "string" && isHex(parsed.salt, { strict: true }) && parsed.salt.length === 66) {
+    if ((parsed.v === 1 || parsed.v === 2) && typeof parsed.salt === "string" && isHex(parsed.salt, { strict: true }) && parsed.salt.length === 66) {
       return parsed.salt;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/** Persist salt + the committed choice for (player, id, round). Used by the play screen. */
+export function saveCommit(player: Address, id: bigint, round: number, salt: Hex, choice: PlayableChoice): boolean {
+  if (!hasStorage()) return false;
+  try {
+    const record: SaltRecord = { v: 2, salt, choice, savedAt: Date.now() };
+    window.localStorage.setItem(saltKey(player, id, round), JSON.stringify(record));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Load salt + choice for auto-reveal. null if missing/corrupt or if only a v1 (salt-only) record exists. */
+export function loadCommit(player: Address, id: bigint, round: number): { salt: Hex; choice: PlayableChoice } | null {
+  if (!hasStorage()) return null;
+  try {
+    const raw = window.localStorage.getItem(saltKey(player, id, round));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<SaltRecord>;
+    if (
+      parsed.v === 2 &&
+      typeof parsed.salt === "string" &&
+      isHex(parsed.salt, { strict: true }) &&
+      parsed.salt.length === 66 &&
+      isPlayable(parsed.choice)
+    ) {
+      return { salt: parsed.salt, choice: parsed.choice };
     }
     return null;
   } catch {
@@ -97,7 +137,7 @@ export function sweepStaleSalts(maxAgeMs = 7 * 24 * 60 * 60 * 1000): void {
       if (!key?.startsWith(`${SALT_PREFIX}:`)) continue;
       try {
         const parsed = JSON.parse(window.localStorage.getItem(key) ?? "") as Partial<SaltRecord>;
-        if (parsed.v !== 1 || typeof parsed.savedAt !== "number" || now - parsed.savedAt > maxAgeMs) {
+        if ((parsed.v !== 1 && parsed.v !== 2) || typeof parsed.savedAt !== "number" || now - parsed.savedAt > maxAgeMs) {
           window.localStorage.removeItem(key);
         }
       } catch {
