@@ -68,7 +68,7 @@ contract Tega is ReentrancyGuard {
     mapping(address => uint32) public betrays;     // reputation: # of EMBAT plays
 
     // ---- events ----
-    event MatchCreated(uint256 id, address p1, address indexed invited, uint256 stake);
+    event MatchCreated(uint256 id, address p1, address indexed invited);  // stake is the STAKE constant
     event PlayerJoined(uint256 id, address p2);
     event RoundStarted(uint256 id, uint8 round, uint256 ante, uint64 deadline);
     event Committed(uint256 id, uint8 round, address who);
@@ -114,7 +114,7 @@ contract Tega is ReentrancyGuard {
         m.p1 = msg.sender;
         m.invited = invited;
         m.phase = Phase.WaitP2;
-        emit MatchCreated(id, msg.sender, invited, STAKE);
+        emit MatchCreated(id, msg.sender, invited);
         _pullStake(msg.sender);
     }
 
@@ -203,7 +203,7 @@ contract Tega is ReentrancyGuard {
         int256 d2;
 
         if (c1 == Choice.Bagi && c2 == Choice.Bagi) {
-            d1 = 0; d2 = 0;                                   // COOP_BONUS = 0
+            // both share: d1 = d2 = 0 (COOP_BONUS = 0)
         } else if (c1 == Choice.Steal && c2 == Choice.Bagi) {
             d1 = A; d2 = -A;
         } else if (c1 == Choice.Bagi && c2 == Choice.Steal) {
