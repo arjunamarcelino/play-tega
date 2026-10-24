@@ -21,6 +21,9 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 ///        (tournament-prize seeding happens off-chain, spec §8).
 ///      - No code may compare `Phase` by ordinal (`<`/`>`); all comparisons are `==`, so the
 ///        appended `Cancelled` value is safe.
+///      - Reverts use require-strings (not custom errors) intentionally: the test suite asserts
+///        exact strings, and Solidity 0.8.24 cannot use custom errors inside `require`. Migrating
+///        to custom errors is a possible future gas optimization.
 contract Tega is ReentrancyGuard {
     using SafeERC20 for IERC20;
 
@@ -47,7 +50,7 @@ contract Tega is ReentrancyGuard {
     uint8   public constant END_PROB   = 25;         // % chance each round (r>=MIN) is the last
     uint64  public constant COMMIT_WIN = 15;         // seconds (popup-wallet baseline; 12 w/ session keys)
     uint64  public constant REVEAL_WIN = 10;         // seconds (8 w/ session keys)
-    uint256 public constant STAKE      = 5_000_000;  // 5 USDC (6 decimals) = Σ all antes
+    uint256 public constant STAKE      = 5_000_000;  // 5 USDC (6 decimals). Σ ante(1..8) = 4_999_996 (= STAKE − 4; truncation dust is paid to players, not trapped)
 
     // ---- storage ----
     /// @notice The ERC-20 staked/paid out (devnads test USDC in production). Immutable: no SLOAD, cannot be reassigned.
@@ -80,8 +83,9 @@ contract Tega is ReentrancyGuard {
         token = _token;
     }
 
-    /// @notice Ante for round `r` — linear: STAKE*r/36 (Σ r=1..8 = 36). Integer division;
-    ///         the winner's +A and loser's -A use the SAME truncated value so no dust asymmetry.
+    /// @notice Ante for round `r` — linear: STAKE*r/36 (Σ weights r=1..8 = 36). Integer division
+    ///         truncates, so Σ ante(1..8) = 4_999_996 ≤ STAKE; conservation holds on scores (not
+    ///         antes) because the winner's +A and loser's -A use the SAME truncated value.
     function ante(uint8 r) public pure returns (uint256) {
         return STAKE * r / 36;
     }
