@@ -265,11 +265,17 @@ contract Tega is ReentrancyGuard {
                 commitOf[_key(id, m.round, m.p2)] != bytes32(0)
             );
         } else {
-            _penalize(
-                id,
-                revealOf[_key(id, m.round, m.p1)] != Choice.None,
-                revealOf[_key(id, m.round, m.p2)] != Choice.None
-            );
+            Choice r1 = revealOf[_key(id, m.round, m.p1)];
+            Choice r2 = revealOf[_key(id, m.round, m.p2)];
+            // Credit the honest revealer's genuine choice (§7) — the round never reached
+            // _resolveRound, so without this they'd get no reputation for a real play.
+            // The no-show's betrays++ is applied in _penalize.
+            if (r1 != Choice.None && r2 == Choice.None) {
+                if (r1 == Choice.Bagi) { coops[m.p1]++; } else { betrays[m.p1]++; }
+            } else if (r2 != Choice.None && r1 == Choice.None) {
+                if (r2 == Choice.Bagi) { coops[m.p2]++; } else { betrays[m.p2]++; }
+            }
+            _penalize(id, r1 != Choice.None, r2 != Choice.None);
         }
     }
 
