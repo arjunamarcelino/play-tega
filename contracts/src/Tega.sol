@@ -13,8 +13,9 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 ///         player pulls `STAKE + score` via `claim`.
 /// @dev Accounting is zero-sum: for any match, `payout1 + payout2 + jackpot == 2*STAKE`.
 ///      SECURITY NOTES:
-///      - Assumes a standard, non-fee-on-transfer, non-rebasing ERC-20. Do NOT point `token`
-///        at a fee-on-transfer or rebasing token — the fixed-ante accounting would break.
+///      - Designed for a standard, non-rebasing ERC-20. Stake pulls assert the exact STAKE was
+///        received (`_pullStake`), so a fee-on-transfer token is rejected rather than silently
+///        shorting escrow; a rebasing token is still unsupported.
 ///      - `jackpot` (from mutual-steal rounds and double-forfeits) is intentionally NEVER
 ///        distributed by this contract; those funds, and any match that never reaches
 ///        Ended/Cancelled, are permanently locked (no admin sweep). This is by design
@@ -93,6 +94,14 @@ contract Tega is ReentrancyGuard {
         return keccak256(abi.encodePacked(id, r, p));
     }
 
+    /// @dev Pull exactly STAKE from `from` and assert the contract actually received it.
+    ///      Rejects fee-on-transfer/rebasing tokens that would leave escrow short.
+    function _pullStake(address from) internal {
+        uint256 balBefore = token.balanceOf(address(this));
+        token.safeTransferFrom(from, address(this), STAKE);
+        require(token.balanceOf(address(this)) - balBefore == STAKE, "bad transfer");
+    }
+
     // ---- lifecycle ----
 
     /// @notice Create a match and escrow STAKE. `invited == address(0)` → open table (joinable
@@ -106,7 +115,7 @@ contract Tega is ReentrancyGuard {
         m.invited = invited;
         m.phase = Phase.WaitP2;
         emit MatchCreated(id, msg.sender, invited, STAKE);
-        token.safeTransferFrom(msg.sender, address(this), STAKE);
+        _pullStake(msg.sender);
     }
 
     /// @notice Join an open/invited match and escrow STAKE; starts round 1 (Commit phase).
@@ -123,7 +132,7 @@ contract Tega is ReentrancyGuard {
         m.deadline = uint64(block.timestamp) + COMMIT_WIN;
         emit PlayerJoined(id, msg.sender);
         emit RoundStarted(id, 1, ante(1), m.deadline);
-        token.safeTransferFrom(msg.sender, address(this), STAKE);
+        _pullStake(msg.sender);
     }
 
     /// @notice Cancel a match that no one joined; refunds p1's full STAKE. (spec §9 C1)
