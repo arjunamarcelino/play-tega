@@ -5,10 +5,12 @@
 -include .env
 export
 
-MONAD_RPC_URL ?= https://testnet-rpc.monad.xyz
-SOURCIFY_URL  := https://sourcify-api-monad.blockvision.org
+MONAD_RPC_URL   ?= https://testnet-rpc.monad.xyz
+MAINNET_RPC_URL ?= https://rpc.monad.xyz
+SOURCIFY_URL    := https://sourcify-api-monad.blockvision.org
+MAINNET_USDC    := 0x754704Bc059F8C67012fEd69BC8A327a5aafb603
 
-.PHONY: build test fmt clean deploy-testnet verify abi
+.PHONY: build test fmt clean deploy-testnet deploy-mainnet abi
 
 build:
 	forge build
@@ -27,6 +29,18 @@ clean:
 deploy-testnet:
 	forge script script/Deploy.s.sol:Deploy \
 		--rpc-url $(MONAD_RPC_URL) \
+		--broadcast \
+		--verify \
+		--verifier sourcify \
+		--verifier-url $(SOURCIFY_URL)
+
+## deploy-mainnet — deploy Tega to Monad MAINNET (chainId 143) wired to real USDC + Sourcify verify.
+## admin/treasurer defaults to the deployer (set ADMIN_ADDRESS=<safe> to use a multisig instead).
+## Needs PRIVATE_KEY (funded with real MON) + MAINNET_RPC_URL. Real funds — double-check before running.
+deploy-mainnet:
+	USDC_ADDRESS=$(MAINNET_USDC) \
+	forge script script/Deploy.s.sol:Deploy \
+		--rpc-url $(MAINNET_RPC_URL) \
 		--broadcast \
 		--verify \
 		--verifier sourcify \

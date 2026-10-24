@@ -86,12 +86,26 @@ cd contracts && make abi          # forge build + writes web/lib/tega/abi.ts
 
 The ABI lives at `web/lib/tega/abi.ts` (typed `as const` for wagmi/viem) and is generated from `contracts/out/Tega.sol/Tega.json` by `scripts/gen-abi.mjs` (`make abi`, or `npm run gen:abi` from `web/`). `web/lib/tega/constants.ts` reads `NEXT_PUBLIC_CONTRACT_ADDRESS`; until it's set, the app runs in an unconfigured (read-only) state.
 
+### Mainnet
+
+Same flow against chainId **143**, wired to real USDC (`0x754704…b603`). Fund the deployer with **real MON** (~0.7 MON covers the deploy) and run:
+
+```sh
+cd contracts && make deploy-mainnet     # RPC https://rpc.monad.xyz + Sourcify verify
+```
+
+The admin/treasurer defaults to the deployer; pass `ADMIN_ADDRESS=<safe-multisig>` to use a multisig instead. Note `STAKE` is a fixed **5 USDC** constant — on mainnet that is real value.
+
 ### 4. Deployed addresses
 
 | Network | Contract | Address |
 |---|---|---|
-| Monad testnet (10143) | **Tega** | [`0xB45A79238aD1E9A2eb85E9E2e3dd57E10FeA2aeC`](https://testnet.monadvision.com/address/0xB45A79238aD1E9A2eb85E9E2e3dd57E10FeA2aeC) _(verified)_ |
-| Monad testnet (10143) | USDC (stake) | `0x56bf9CDc3C1876F3F22655a0016C2743E9e39a73` _(fixed — devnads test USDC)_ |
+| Monad **mainnet** (143) | **Tega** | [`0xB45A79238aD1E9A2eb85E9E2e3dd57E10FeA2aeC`](https://monadvision.com/address/0xB45A79238aD1E9A2eb85E9E2e3dd57E10FeA2aeC) _(verified)_ |
+| Monad **mainnet** (143) | USDC (stake) | `0x754704Bc059F8C67012fEd69BC8A327a5aafb603` _(fixed — real USDC)_ |
+| Monad **testnet** (10143) | **Tega** | [`0xB45A79238aD1E9A2eb85E9E2e3dd57E10FeA2aeC`](https://testnet.monadvision.com/address/0xB45A79238aD1E9A2eb85E9E2e3dd57E10FeA2aeC) _(verified)_ |
+| Monad **testnet** (10143) | USDC (stake) | `0x56bf9CDc3C1876F3F22655a0016C2743E9e39a73` _(fixed — devnads test USDC)_ |
+
+> Both deployments share the same address because they were created by the same deployer at nonce 0 (CREATE is deterministic).
 
 ### Players: get test USDC
 
