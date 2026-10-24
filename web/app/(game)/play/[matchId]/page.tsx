@@ -75,7 +75,8 @@ export default function PlayPage() {
       endedRef.current = true;
       const mine = isP1 ? match.score1 : match.score2;
       const opp = isP1 ? match.score2 : match.score1;
-      mine >= opp ? sfx.win() : sfx.lose();
+      if (mine >= opp) sfx.win();
+      else sfx.lose();
     }
   }, [match?.phase, iAmPlayer, isP1, match]);
 

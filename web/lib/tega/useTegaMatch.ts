@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { zeroHash, type Address } from "viem";
 import { useWatchContractEvent } from "wagmi";
 import { monadTestnet } from "@/lib/monadChain";

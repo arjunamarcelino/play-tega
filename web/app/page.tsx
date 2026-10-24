@@ -20,7 +20,14 @@ export default function Home() {
 
       <ConnectButton />
 
-      <Link href="/debug" className="display text-sm text-mon underline-offset-4 hover:underline">
+      <Link
+        href="/app"
+        className="display rounded-xl border border-mon/60 bg-panel/60 px-6 py-3 text-lg text-mon transition-all hover:border-mon hover:shadow-neon-mon"
+      >
+        ▶ Enter the lobby
+      </Link>
+
+      <Link href="/debug" className="display text-sm text-white/40 underline-offset-4 hover:text-white/70 hover:underline">
         Open debug console →
       </Link>
     </main>
