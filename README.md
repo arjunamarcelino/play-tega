@@ -90,7 +90,7 @@ The ABI lives at `web/lib/tega/abi.ts` (typed `as const` for wagmi/viem) and is 
 
 | Network | Contract | Address |
 |---|---|---|
-| Monad testnet (10143) | **Tega** | `0x…` ← _fill in after deploy_ |
+| Monad testnet (10143) | **Tega** | [`0xB45A79238aD1E9A2eb85E9E2e3dd57E10FeA2aeC`](https://testnet.monadvision.com/address/0xB45A79238aD1E9A2eb85E9E2e3dd57E10FeA2aeC) _(verified)_ |
 | Monad testnet (10143) | USDC (stake) | `0x56bf9CDc3C1876F3F22655a0016C2743E9e39a73` _(fixed — devnads test USDC)_ |
 
 ### Players: get test USDC
