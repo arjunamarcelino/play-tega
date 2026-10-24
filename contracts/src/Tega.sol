@@ -222,18 +222,25 @@ contract Tega is ReentrancyGuard {
         _advance(id);
     }
 
-    /// @dev Random endpoint (spec §6): after MIN_ROUNDS, each round has END_PROB% chance to end;
-    ///      always ends at MAX_ROUNDS.
-    ///      RANDOMNESS CAVEAT: `block.prevrandao` is NOT cryptographically secure. The second
-    ///      revealer (or a `poke` caller) can grind block timing across the reveal window to
-    ///      bias the end/continue outcome; a block proposer has limited influence too. Acceptable
-    ///      for a low-stakes testnet demo; production should use a VRF.
+    /// @dev Random endpoint (spec §6): decides whether the game ENDS after a round — rounds
+    ///      MIN_ROUNDS..MAX_ROUNDS-1 each have an END_PROB% chance; always ends at MAX_ROUNDS.
+    ///      Purpose: hide which round is last, breaking backward-induction unraveling.
+    ///      SEED = keccak256(both players' commit hashes, id, round), fixed at COMMIT time (before
+    ///      any reveal), so reveal-timing cannot grind the outcome. Documented residual: the second
+    ///      committer sees the first's commit hash and could grind their own salt to bias
+    ///      end/continue — but without knowing the round result (not yet revealed), so it is far
+    ///      weaker than reveal-grinding and acceptable for a low-stakes social game.
     function _advance(uint256 id) internal {
         Match storage m = matches[id];
         bool last = m.round >= MAX_ROUNDS;
         bool rand = false;
         if (!last && m.round >= MIN_ROUNDS) {
-            uint256 seed = uint256(keccak256(abi.encodePacked(block.prevrandao, id, m.round)));
+            uint256 seed = uint256(keccak256(abi.encodePacked(
+                commitOf[_key(id, m.round, m.p1)],
+                commitOf[_key(id, m.round, m.p2)],
+                id,
+                m.round
+            )));
             if (seed % 100 < END_PROB) {
                 last = true;
                 rand = true;
