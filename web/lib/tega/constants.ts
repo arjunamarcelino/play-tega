@@ -29,6 +29,15 @@ export const USDC_DECIMALS = Number(process.env.NEXT_PUBLIC_USDC_DECIMALS ?? 6);
 export const FAUCET_URL = process.env.NEXT_PUBLIC_FAUCET_URL ?? "";
 export const HAS_FAUCET = FAUCET_URL.trim() !== "";
 
+/**
+ * Block explorer base, per network (set via env). Defaults to testnet MonadVision.
+ *   testnet: https://testnet.monadvision.com · mainnet: https://monadvision.com
+ * Used to make the deployed contract address + tx hashes clickable.
+ */
+export const EXPLORER_URL = (process.env.NEXT_PUBLIC_EXPLORER_URL ?? "https://testnet.monadvision.com").replace(/\/+$/, "");
+export const explorerAddress = (addr: string) => `${EXPLORER_URL}/address/${addr}`;
+export const explorerTx = (hash: string) => `${EXPLORER_URL}/tx/${hash}`;
+
 // ---- display-only fallbacks (Tega.sol:55-60) ----
 // NEVER use these in tx-building or balance math — read the live values via
 // useStake()/useAnte(). They exist only to render a skeleton before chain data loads.

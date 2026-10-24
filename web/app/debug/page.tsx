@@ -23,9 +23,8 @@ import {
 } from "@/lib/tega/hooks";
 import { buildCommitHash, loadSalt, randomSalt32, saveSalt, sweepStaleSalts } from "@/lib/tega/commit";
 import { Choice, PHASE_LABEL, type PlayableChoice } from "@/lib/tega/types";
-import { FAUCET_URL, HAS_FAUCET, IS_TEGA_CONFIGURED, USDC_DECIMALS } from "@/lib/tega/constants";
+import { FAUCET_URL, HAS_FAUCET, IS_TEGA_CONFIGURED, USDC_DECIMALS, explorerAddress, explorerTx } from "@/lib/tega/constants";
 
-const EXPLORER = monadTestnet.blockExplorers.default.url;
 const usdc = (v?: bigint) => (v === undefined ? "—" : `${formatUnits(v, USDC_DECIMALS)} USDC`);
 
 function parseId(s: string): bigint | null {
@@ -166,7 +165,12 @@ export default function DebugPage() {
           {/* identity & balances */}
           <Panel className="space-y-1 text-sm">
             <Row label="Address" value={address ?? "—"} mono />
-            <Row label="Tega contract" value={TEGA_ADDRESS} mono />
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-white/60">Tega contract</span>
+              <a href={explorerAddress(TEGA_ADDRESS)} target="_blank" rel="noopener noreferrer" className="break-all font-mono text-xs text-mon hover:underline">
+                {TEGA_ADDRESS} ↗
+              </a>
+            </div>
             <Row label="USDC balance" value={usdc(balance.data as bigint | undefined)} />
             <Row label="Allowance → Tega" value={usdc(allowance.data as bigint | undefined)} />
             <Row label="Needs approval" value={flow.needsApproval ? "yes" : "no"} />
@@ -246,7 +250,7 @@ export default function DebugPage() {
     if (!tx.hash) return null;
     return (
       <p className="text-xs">
-        <a className="text-mon underline-offset-4 hover:underline" href={`${EXPLORER}/tx/${tx.hash}`} target="_blank" rel="noopener noreferrer">
+        <a className="text-mon underline-offset-4 hover:underline" href={explorerTx(tx.hash)} target="_blank" rel="noopener noreferrer">
           {tx.hash.slice(0, 12)}… ↗
         </a>{" "}
         {tx.isMining && <span className="neon-gold">pending…</span>}

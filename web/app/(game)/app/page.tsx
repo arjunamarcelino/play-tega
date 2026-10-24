@@ -10,7 +10,7 @@ import { Button, Chip, Panel } from "@/components/ui";
 import { AssetImg } from "@/components/AssetImg";
 import { assets } from "@/lib/assets";
 import { tegaAbi } from "@/lib/tega/abi";
-import { FAUCET_URL, HAS_FAUCET, IS_TEGA_CONFIGURED, TEGA_ADDRESS } from "@/lib/tega/constants";
+import { FAUCET_URL, HAS_FAUCET, IS_TEGA_CONFIGURED, TEGA_ADDRESS, explorerAddress } from "@/lib/tega/constants";
 import { useStake, useStakeFlow, useUsdcBalance, useUsdcAllowance, describeError } from "@/lib/tega/hooks";
 import { useTegaActions } from "@/lib/tega/actions";
 import { useMyMatches } from "@/lib/tega/useMyMatches";
@@ -157,6 +157,14 @@ export default function Lobby() {
         <p className="mt-1 text-sm text-white/55">
           Stake per match: <span className="neon-gold display">{fmtUsdc(liveStake)} {CURRENCY}</span>
         </p>
+        {IS_TEGA_CONFIGURED && (
+          <div className="mt-1 text-xs text-white/40">
+            Contract:{" "}
+            <a href={explorerAddress(TEGA_ADDRESS)} target="_blank" rel="noopener noreferrer" className="font-mono text-mon hover:underline">
+              {TEGA_ADDRESS.slice(0, 10)}…{TEGA_ADDRESS.slice(-4)} ↗
+            </a>
+          </div>
+        )}
         {isConnected && address && (
           <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-white/40">
             <span>Your address:</span>

@@ -1,0 +1,24 @@
+# Build context is the repo root (see web/Dockerfile). Keep it lean and never
+# bake local secrets into the image.
+**/node_modules
+web/.next
+web/out
+web/build
+web/coverage
+**/*.tsbuildinfo
+
+# not needed to build the web app
+contracts
+docs
+scripts
+
+.git
+.gitignore
+.github
+**/.vercel
+**/.DS_Store
+
+# never ship local env into the image — build-time config comes via --build-arg
+**/.env
+**/.env.*
+!**/.env.example
