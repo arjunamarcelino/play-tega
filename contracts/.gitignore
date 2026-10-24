@@ -2,6 +2,9 @@
 cache/
 out/
 
+# Foundry dependencies (tracked as git submodules, not vendored)
+lib/
+
 # Ignores development broadcast logs, but keeps real deployment logs
 !/broadcast
 /broadcast/*/31337/
