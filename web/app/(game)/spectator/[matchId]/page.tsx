@@ -68,7 +68,7 @@ export default function Spectator() {
   const joinUrl = typeof window !== "undefined" ? `${window.location.origin}/play/${id.toString()}` : "";
 
   return (
-    <div className="relative mx-auto flex min-h-[86vh] max-w-6xl flex-col items-center justify-center overflow-hidden px-6 py-8">
+    <div className="relative left-1/2 right-1/2 -mx-[50vw] flex min-h-[86vh] w-screen flex-col items-center justify-center overflow-hidden px-6 py-8">
       <AssetBg src={assets.arenaBg} opacity={0.18} fullBleed height="clamp(220px, 55vh, 520px)" />
 
       {/* mobile-join QR, corner */}
@@ -81,7 +81,7 @@ export default function Spectator() {
 
       {lastClaim && <ClaimToast amount={lastClaim.amount} />}
 
-      <div className="relative z-10 flex w-full flex-col items-center">
+      <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-center">
         <div className="mb-6 flex items-center gap-3">
           <Chip className="neon-mon text-sm">Match #{id.toString()}</Chip>
           {live && <Chip className="neon-mon text-sm">Round {match.round}</Chip>}
