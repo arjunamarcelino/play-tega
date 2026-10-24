@@ -69,7 +69,7 @@ export default function Spectator() {
 
   return (
     <div className="relative mx-auto flex min-h-[86vh] max-w-6xl flex-col items-center justify-center overflow-hidden px-6 py-8">
-      <AssetBg src={assets.arenaBg} opacity={0.18} />
+      <AssetBg src={assets.arenaBg} opacity={0.18} fullBleed height="clamp(220px, 55vh, 520px)" />
 
       {/* mobile-join QR, corner */}
       {live && joinUrl && (

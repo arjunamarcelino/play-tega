@@ -25,7 +25,7 @@ export default function Landing() {
     <div className="relative z-10">
       {/* HERO */}
       <section className="relative left-1/2 right-1/2 -mx-[50vw] flex w-screen flex-col items-center overflow-hidden px-6 pt-10 pb-20 text-center md:pt-20">
-        <AssetBg src={assets.heroBg} opacity={0.4} />
+        <AssetBg src={assets.heroBg} opacity={0.4} fullBleed height="clamp(280px, 70vh, 640px)" />
         <div data-hero-group className="relative flex w-full max-w-5xl flex-col items-center">
           <span className="chip display relative mb-6 text-white/60">Live on-chain trust game</span>
           <AssetImg
