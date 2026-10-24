@@ -26,6 +26,10 @@ abstract contract TegaTestBase is Test {
     uint64 internal constant COMMIT_WIN = 15;
     uint64 internal constant REVEAL_WIN = 10;
 
+    // Role ids as constants (avoid an external call that would consume a pending vm.prank).
+    bytes32 internal constant TREASURER_ROLE = keccak256("TREASURER_ROLE");
+    bytes32 internal constant DEFAULT_ADMIN_ROLE = 0x00;
+
     function setUp() public virtual {
         usdc = new MockUSDC();
         tega = new Tega(IERC20(address(usdc)), admin);
