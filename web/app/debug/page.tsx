@@ -105,13 +105,13 @@ export default function DebugPage() {
   function commit() {
     if (parsedMatchId === null || !address || parsedRound < 1) return;
     const salt = randomSalt32();
-    saveSalt(parsedMatchId, parsedRound, salt);
+    saveSalt(address, parsedMatchId, parsedRound, salt);
     const hash = buildCommitHash(choice, salt, parsedMatchId, parsedRound, address);
     tx.writeContract({ address: TEGA_ADDRESS, abi: tegaAbi, chainId: monadTestnet.id, functionName: "commit", args: [parsedMatchId, hash] });
   }
   function reveal() {
-    if (parsedMatchId === null) return;
-    const salt = loadSalt(parsedMatchId, parsedRound);
+    if (parsedMatchId === null || !address) return;
+    const salt = loadSalt(address, parsedMatchId, parsedRound);
     if (!salt) {
       alert(`No saved salt for match ${matchId} round ${round} — cannot reveal from this browser.`);
       return;

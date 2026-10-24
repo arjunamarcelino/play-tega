@@ -34,7 +34,11 @@ export function buildCommitHash(
 // it to the opponent before they commit breaks fairness — so never send it to logging/analytics.
 
 const SALT_PREFIX = "tega";
-const saltKey = (id: bigint, round: number) => `${SALT_PREFIX}:${id.toString()}:${round}`;
+// Key is scoped to the player address: the commit hash binds `player`, and one browser
+// may drive both sides of a match (e.g. the debug console), so an unscoped (id, round)
+// key would let one player clobber/read the other's salt.
+const saltKey = (player: Address, id: bigint, round: number) =>
+  `${SALT_PREFIX}:${player.toLowerCase()}:${id.toString()}:${round}`;
 
 type SaltRecord = { v: 1; salt: Hex; savedAt: number };
 
@@ -46,12 +50,12 @@ function hasStorage(): boolean {
   }
 }
 
-/** Persist the salt for (id, round). Returns false if storage is unavailable/full. */
-export function saveSalt(id: bigint, round: number, salt: Hex): boolean {
+/** Persist the salt for (player, id, round). Returns false if storage is unavailable/full. */
+export function saveSalt(player: Address, id: bigint, round: number, salt: Hex): boolean {
   if (!hasStorage()) return false;
   try {
     const record: SaltRecord = { v: 1, salt, savedAt: Date.now() };
-    window.localStorage.setItem(saltKey(id, round), JSON.stringify(record));
+    window.localStorage.setItem(saltKey(player, id, round), JSON.stringify(record));
     return true;
   } catch {
     return false;
@@ -59,10 +63,10 @@ export function saveSalt(id: bigint, round: number, salt: Hex): boolean {
 }
 
 /** Load a previously saved salt, validating shape + length. null if missing/corrupt. */
-export function loadSalt(id: bigint, round: number): Hex | null {
+export function loadSalt(player: Address, id: bigint, round: number): Hex | null {
   if (!hasStorage()) return null;
   try {
-    const raw = window.localStorage.getItem(saltKey(id, round));
+    const raw = window.localStorage.getItem(saltKey(player, id, round));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<SaltRecord>;
     if (parsed.v === 1 && typeof parsed.salt === "string" && isHex(parsed.salt, { strict: true }) && parsed.salt.length === 66) {
@@ -74,10 +78,10 @@ export function loadSalt(id: bigint, round: number): Hex | null {
   }
 }
 
-export function clearSalt(id: bigint, round: number): void {
+export function clearSalt(player: Address, id: bigint, round: number): void {
   if (!hasStorage()) return;
   try {
-    window.localStorage.removeItem(saltKey(id, round));
+    window.localStorage.removeItem(saltKey(player, id, round));
   } catch {
     /* ignore */
   }
