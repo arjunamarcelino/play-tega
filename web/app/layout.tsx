@@ -1,22 +1,22 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
+import { Orbitron, Oxanium } from "next/font/google";
 import { Providers } from "./providers";
 import "./globals.css";
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
+const orbitron = Orbitron({
+  subsets: ["latin"],
+  weight: ["500", "700", "900"],
+  variable: "--font-display",
 });
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
+const oxanium = Oxanium({
+  subsets: ["latin"],
+  weight: ["400", "600", "800"],
+  variable: "--font-ui",
 });
 
 export const metadata: Metadata = {
   title: "TEGA — Berani khianat?",
-  description: "On-chain trust game on Monad",
+  description: "On-chain split-or-steal trust game on Monad",
 };
 
 export default function RootLayout({
@@ -26,9 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${orbitron.variable} ${oxanium.variable} scanlines antialiased`}>
         <Providers>{children}</Providers>
       </body>
     </html>
