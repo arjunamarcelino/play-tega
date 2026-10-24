@@ -19,7 +19,10 @@ import { rememberMatchId } from "@/lib/tega/matchIndex";
 import { CURRENCY, fmtUsdc } from "@/lib/tega/format";
 import { PHASE_LABEL, Phase } from "@/lib/tega/types";
 
-type Pending = null | { kind: "approve" } | { kind: "create" } | { kind: "join"; id: bigint };
+type Via = "open" | "challenge" | "join";
+type Intent = { action: "create"; invited: Address } | { action: "join"; id: bigint };
+// A single click may need two txs (approve → act). `phase` tracks which one is in flight.
+type Pending = null | { via: Via; intent: Intent; phase: "approving" | "acting" };
 
 function parseId(s: string): bigint | null {
   const t = s.trim();
@@ -77,12 +80,39 @@ export default function Lobby() {
   const busy = tx.isPending || tx.isMining;
   const writesBlocked = !isConnected || wrongChain || !IS_TEGA_CONFIGURED || busy;
 
-  // Resolve a confirmed tx to its follow-up (navigate / refetch allowance).
+  function fireIntent(intent: Intent) {
+    if (intent.action === "create") createMatch(intent.invited);
+    else joinMatch(intent.id);
+  }
+
+  // Start an action. Approval is implicit: if the allowance is short we send the
+  // approve first, then fire the real tx when it confirms (no dedicated button).
+  function start(via: Via, intent: Intent) {
+    setErr("");
+    if (flow.needsApproval) {
+      if (liveStake === undefined) return;
+      setPending({ via, intent, phase: "approving" });
+      approve(liveStake);
+    } else {
+      setPending({ via, intent, phase: "acting" });
+      fireIntent(intent);
+    }
+  }
+
+  // Drive the two-step flow: approve confirmed → fire the real tx; act confirmed → navigate.
   useEffect(() => {
     if (!tx.isConfirmed || !tx.receipt || !pending || !address) return;
-    if (pending.kind === "approve") {
+    if (pending.phase === "approving") {
       allowance.refetch();
-    } else if (pending.kind === "create") {
+      const { via, intent } = pending;
+      setPending({ via, intent, phase: "acting" });
+      tx.reset();
+      fireIntent(intent);
+      return;
+    }
+    // acting
+    const { intent } = pending;
+    if (intent.action === "create") {
       const id = decodeCreatedId(tx.receipt.logs);
       if (id !== null) {
         rememberMatchId(address, id);
@@ -90,41 +120,34 @@ export default function Lobby() {
       } else {
         setErr("Match created, but could not read its id from the receipt. Check the lobby list.");
       }
-    } else if (pending.kind === "join") {
-      rememberMatchId(address, pending.id);
-      router.push(`/play/${pending.id.toString()}`);
+    } else {
+      rememberMatchId(address, intent.id);
+      router.push(`/play/${intent.id.toString()}`);
     }
     setPending(null);
     tx.reset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tx.isConfirmed, tx.receipt]);
 
-  function doApprove() {
-    if (liveStake === undefined) return;
-    setErr("");
-    setPending({ kind: "approve" });
-    approve(liveStake);
-  }
-  function doCreate(invited: Address) {
-    setErr("");
-    setPending({ kind: "create" });
-    createMatch(invited);
-  }
   function doCreateOpen() {
-    doCreate(zeroAddress);
+    start("open", { action: "create", invited: zeroAddress });
   }
   function doChallenge() {
     const t = invite.trim();
     if (!isAddress(t)) return setErr("Enter a valid player address.");
     if (address && t.toLowerCase() === address.toLowerCase()) return setErr("You can't challenge yourself.");
-    doCreate(t);
+    start("challenge", { action: "create", invited: t });
   }
   function doJoin() {
     const id = parseId(code);
     if (id === null) return setErr("Enter a numeric match id.");
-    setErr("");
-    setPending({ kind: "join", id });
-    joinMatch(id);
+    start("join", { action: "join", id });
+  }
+
+  // Per-button busy label (shows the approve step so the double-signature isn't a surprise).
+  function label(via: Via, idle: string) {
+    if (!busy || pending?.via !== via) return idle;
+    return pending.phase === "approving" ? "Approving…" : via === "join" ? "Joining…" : "Creating…";
   }
 
   return (
@@ -182,40 +205,32 @@ export default function Lobby() {
             <Panel>
               <h2 className="display text-lg font-bold">New match</h2>
               <p className="mt-1 text-sm text-white/55">
-                Open a table and share the match id, or challenge a specific address. Each side escrows the stake on join.
+                Open a table and share the match id, or challenge a specific address. Each side escrows the stake on join —
+                your wallet approves it the first time automatically.
               </p>
 
-              {flow.needsApproval ? (
-                <div className="mt-4">
-                  <p className="mb-2 text-xs text-white/50">First, approve the contract to pull your {fmtUsdc(liveStake)} {CURRENCY} stake.</p>
-                  <Button variant="gold" className="w-full" disabled={writesBlocked || !hasStake || liveStake === undefined} onClick={doApprove}>
-                    {busy && pending?.kind === "approve" ? "Approving…" : `Approve ${fmtUsdc(liveStake)} ${CURRENCY}`}
-                  </Button>
-                </div>
-              ) : (
-                <div className="mt-4 flex flex-col gap-3">
-                  <Button variant="primary" disabled={writesBlocked || !hasStake} onClick={doCreateOpen}>
-                    {busy && pending?.kind === "create" ? "Creating…" : "＋ Create open table"}
-                  </Button>
-                  <div className="mt-1 border-t border-white/10 pt-3">
-                    <div className="mb-2 text-xs uppercase tracking-widest text-white/40">Challenge a specific player</div>
-                    <div className="flex gap-2">
-                      <input
-                        value={invite}
-                        onChange={(e) => {
-                          setInvite(e.target.value);
-                          setErr("");
-                        }}
-                        placeholder="0x… player address"
-                        className="w-full rounded-xl border border-mon/40 bg-black/40 px-3 py-2 text-sm outline-none focus:border-mon"
-                      />
-                      <Button variant="embat" disabled={writesBlocked || !hasStake} onClick={doChallenge}>
-                        ⚔️ Challenge
-                      </Button>
-                    </div>
+              <div className="mt-4 flex flex-col gap-3">
+                <Button variant="primary" disabled={writesBlocked || !hasStake} onClick={doCreateOpen}>
+                  {label("open", "＋ Create open table")}
+                </Button>
+                <div className="mt-1 border-t border-white/10 pt-3">
+                  <div className="mb-2 text-xs uppercase tracking-widest text-white/40">Challenge a specific player</div>
+                  <div className="flex gap-2">
+                    <input
+                      value={invite}
+                      onChange={(e) => {
+                        setInvite(e.target.value);
+                        setErr("");
+                      }}
+                      placeholder="0x… player address"
+                      className="w-full rounded-xl border border-mon/40 bg-black/40 px-3 py-2 text-sm outline-none focus:border-mon"
+                    />
+                    <Button variant="embat" disabled={writesBlocked || !hasStake} onClick={doChallenge}>
+                      {label("challenge", "⚔️ Challenge")}
+                    </Button>
                   </div>
                 </div>
-              )}
+              </div>
             </Panel>
 
             <Panel>
@@ -232,11 +247,10 @@ export default function Lobby() {
                   inputMode="numeric"
                   className="display w-full rounded-xl border border-mon/40 bg-black/40 px-4 py-3 text-lg tracking-[0.3em] outline-none focus:border-mon"
                 />
-                <Button variant="bagi" disabled={writesBlocked || !hasStake || flow.needsApproval} onClick={doJoin}>
-                  {busy && pending?.kind === "join" ? "Joining…" : "Join"}
+                <Button variant="bagi" disabled={writesBlocked || !hasStake} onClick={doJoin}>
+                  {label("join", "Join")}
                 </Button>
               </div>
-              {flow.needsApproval && <p className="mt-2 text-xs text-white/40">Approve your stake (left) before joining.</p>}
               {err && <p className="mt-2 text-sm text-embat">{err}</p>}
               {tx.error && <p className="mt-2 text-sm text-embat">{describeError(tx.error)}</p>}
             </Panel>
@@ -317,19 +331,44 @@ function MatchRow({ id }: { id: bigint }) {
 function ChallengeRow({ id, me, disabled }: { id: bigint; me: Address | undefined; disabled: boolean }) {
   const router = useRouter();
   const { match } = useMatch(id);
-  const { tx, joinMatch } = useTegaActions();
+  const { tx, approve, joinMatch } = useTegaActions();
+  const stake = useStake();
+  const liveStake = stake.data as bigint | undefined;
+  const flow = useStakeFlow(liveStake);
+  const [phase, setPhase] = useState<null | "approving" | "joining">(null);
 
+  // Accept → approve first if needed, then join; navigate once the join confirms.
   useEffect(() => {
-    if (tx.isConfirmed && me) {
+    if (!tx.isConfirmed || !me) return;
+    if (phase === "approving") {
+      flow.refetchAllowance();
+      setPhase("joining");
+      tx.reset();
+      joinMatch(id);
+      return;
+    }
+    if (phase === "joining") {
       rememberMatchId(me, id);
       router.push(`/play/${id.toString()}`);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tx.isConfirmed]);
 
+  function accept() {
+    if (flow.needsApproval) {
+      if (liveStake === undefined) return;
+      setPhase("approving");
+      approve(liveStake);
+    } else {
+      setPhase("joining");
+      joinMatch(id);
+    }
+  }
+
   // Only a still-open invite addressed to me is actionable.
   if (!match || match.phase !== Phase.WaitP2 || !me || match.invited.toLowerCase() !== me.toLowerCase()) return null;
 
+  const busy = tx.isPending || tx.isMining;
   return (
     <div className="panel flex items-center justify-between gap-3 px-4 py-3">
       <div className="flex items-center gap-3">
@@ -338,8 +377,8 @@ function ChallengeRow({ id, me, disabled }: { id: bigint; me: Address | undefine
         </span>
         <span className="display text-sm tracking-widest text-white/50">#{id.toString()}</span>
       </div>
-      <Button variant="bagi" disabled={disabled || tx.isPending || tx.isMining} onClick={() => joinMatch(id)}>
-        {tx.isPending || tx.isMining ? "Joining…" : "Accept"}
+      <Button variant="bagi" disabled={disabled || busy} onClick={accept}>
+        {busy ? (phase === "approving" ? "Approving…" : "Joining…") : "Accept"}
       </Button>
     </div>
   );

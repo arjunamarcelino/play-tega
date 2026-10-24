@@ -48,6 +48,7 @@ export default function PlayPage() {
 
   const [flash, setFlash] = useState<RoundResult | null>(null);
   const [saltError, setSaltError] = useState(false);
+  const [joinPhase, setJoinPhase] = useState<null | "approving" | "joining">(null);
   const shownRef = useRef(0);
   const endedRef = useRef(false);
   const tickRef = useRef(0);
@@ -100,6 +101,32 @@ export default function PlayPage() {
     const res = reveal(id, match.round, address);
     if (!res.ok) setSaltError(true);
   }, [match, iAmPlayer, id, address, myRevealed, tx.isPending, tx.isMining, reveal]);
+
+  // Direct-link join (WaitP2): approve implicitly if needed, then join — no separate button.
+  useEffect(() => {
+    if (!tx.isConfirmed || !joinPhase || !id) return;
+    if (joinPhase === "approving") {
+      flow.refetchAllowance();
+      setJoinPhase("joining");
+      tx.reset();
+      joinMatch(id);
+    } else {
+      setJoinPhase(null);
+      tx.reset();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tx.isConfirmed]);
+
+  function acceptJoin() {
+    if (!id) return;
+    if (flow.needsApproval) {
+      setJoinPhase("approving");
+      approve(liveStake);
+    } else {
+      setJoinPhase("joining");
+      joinMatch(id);
+    }
+  }
 
   if (!IS_TEGA_CONFIGURED) return <Center>The game is not configured (missing contract address).</Center>;
   if (id === undefined) return <Center>Invalid match id.</Center>;
@@ -162,22 +189,18 @@ export default function PlayPage() {
             <Button variant="embat" onClick={() => switchChain({ chainId: monadTestnet.id })}>Switch to Monad testnet</Button>
           ) : !invitedToMe ? (
             <p className="text-sm text-embat">This table is locked to another player.</p>
-          ) : flow.needsApproval ? (
+          ) : canJoin ? (
             <>
-              <p className="mb-2 text-sm text-white/60">Approve your {fmtUsdc(liveStake)} {CURRENCY} stake, then join.</p>
-              <Button variant="gold" className="w-full" disabled={busy} onClick={() => approve(liveStake)}>
-                {busy ? "Approving…" : `Approve ${fmtUsdc(liveStake)} ${CURRENCY}`}
+              <Button variant="bagi" className="w-full" disabled={busy} onClick={acceptJoin}>
+                {busy ? (joinPhase === "approving" ? "Approving stake…" : "Joining…") : "Join this table"}
               </Button>
+              <p className="mt-2 text-xs text-white/40">Your {fmtUsdc(liveStake)} {CURRENCY} stake is approved automatically on join.</p>
               {(balance.data as bigint | undefined) !== undefined && (balance.data as bigint) < liveStake && (
                 <a href={FAUCET_URL} target="_blank" rel="noopener noreferrer" className="mt-2 block text-xs text-mon hover:underline">
                   Need test USDC? Mint ↗
                 </a>
               )}
             </>
-          ) : canJoin ? (
-            <Button variant="bagi" className="w-full" disabled={busy} onClick={() => joinMatch(id)}>
-              {busy ? "Joining…" : "Join this table"}
-            </Button>
           ) : null}
           {tx.error && <p className="mt-3 text-sm text-embat">{describeError(tx.error)}</p>}
         </Panel>
