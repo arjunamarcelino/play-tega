@@ -7,6 +7,8 @@ import { decodeEventLog, isAddress, zeroAddress, type Address } from "viem";
 import { useAccount, useSwitchChain } from "wagmi";
 import { monadTestnet } from "@/lib/monadChain";
 import { Button, Chip, Panel } from "@/components/ui";
+import { AssetImg } from "@/components/AssetImg";
+import { assets } from "@/lib/assets";
 import { tegaAbi } from "@/lib/tega/abi";
 import { FAUCET_URL, IS_TEGA_CONFIGURED, TEGA_ADDRESS } from "@/lib/tega/constants";
 import { useStake, useStakeFlow, useUsdcBalance, useUsdcAllowance, describeError } from "@/lib/tega/hooks";
@@ -51,6 +53,14 @@ export default function Lobby() {
   const [code, setCode] = useState("");
   const [err, setErr] = useState("");
   const [pending, setPending] = useState<Pending>(null);
+  const [copied, setCopied] = useState(false);
+
+  const copyAddr = () => {
+    if (!address) return;
+    navigator.clipboard?.writeText(address);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1200);
+  };
 
   const stake = useStake();
   const liveStake = stake.data as bigint | undefined;
@@ -124,6 +134,14 @@ export default function Lobby() {
         <p className="mt-1 text-sm text-white/55">
           Stake per match: <span className="neon-gold display">{fmtUsdc(liveStake)} {CURRENCY}</span>
         </p>
+        {isConnected && address && (
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-white/40">
+            <span>Your address:</span>
+            <code className="rounded bg-black/40 px-2 py-0.5 text-white/70">{address.slice(0, 10)}…{address.slice(-4)}</code>
+            <button onClick={copyAddr} className="text-mon hover:underline">{copied ? "copied!" : "copy"}</button>
+            <span className="text-white/30">— share it so someone can challenge you</span>
+          </div>
+        )}
         <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-white/40">
           <span>Balance:</span>
           <span className="display neon-gold">{fmtUsdc(bal)} {CURRENCY}</span>
@@ -246,6 +264,26 @@ export default function Lobby() {
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Coming-soon modes */}
+          <div className="mt-12">
+            <h2 className="display mb-3 text-sm uppercase tracking-[0.3em] text-white/45">More modes · coming soon</h2>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                { icon: "👥", img: assets.mode.mass, t: "Mass Jackpot", d: "Whole room, one shared round." },
+                { icon: "🏆", img: assets.mode.tournament, t: "Tournaments", d: "Brackets, seeding, grand final." },
+                { icon: "🐍", img: assets.mode.snake, t: "Snake Score", d: "On-chain trust reputation & ranks." },
+                { icon: "🎨", img: assets.mode.cosmetics, t: "Cosmetics", d: "Card skins, avatars, taunts." },
+              ].map((m) => (
+                <div key={m.t} className="panel relative p-5 opacity-70">
+                  <span className="chip display absolute right-3 top-3 text-[10px] neon-gold">Soon</span>
+                  <AssetImg src={m.img} alt="" className="h-8 w-8 object-contain" fallback={<div className="text-2xl">{m.icon}</div>} />
+                  <div className="display mt-2 font-bold">{m.t}</div>
+                  <div className="mt-1 text-xs text-white/50">{m.d}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </>
       )}

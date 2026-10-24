@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { MuteButton } from "@/components/MuteButton";
+import { AssetImg } from "@/components/AssetImg";
+import { assets } from "@/lib/assets";
 import { FAUCET_URL } from "@/lib/tega/constants";
 
 export default function GameLayout({ children }: { children: React.ReactNode }) {
@@ -10,9 +12,18 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
     <div className="relative z-10 flex min-h-screen flex-col">
       <header className="flex items-center justify-between border-b border-white/10 bg-black/30 px-5 py-3 backdrop-blur md:px-8">
         <div className="flex items-center gap-4">
-          <Link href="/" aria-label="TEGA home" className="display text-lg font-black tracking-widest">
-            <span className="neon-bagi">TE</span>
-            <span className="neon-embat">GA</span>
+          <Link href="/" aria-label="TEGA home">
+            <AssetImg
+              src={assets.logo}
+              alt="TEGA"
+              className="h-6 w-auto"
+              fallback={
+                <span className="display text-lg font-black tracking-widest">
+                  <span className="neon-bagi">TE</span>
+                  <span className="neon-embat">GA</span>
+                </span>
+              }
+            />
           </Link>
           <Link href="/app" className="text-xs uppercase tracking-widest text-white/40 hover:text-white/70">
             Lobby

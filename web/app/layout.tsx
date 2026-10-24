@@ -15,8 +15,15 @@ const oxanium = Oxanium({
 });
 
 export const metadata: Metadata = {
-  title: "TEGA — Berani khianat?",
-  description: "On-chain split-or-steal trust game on Monad",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
+  title: "TEGA: Split it. Or steal it.",
+  description: "A live on-chain trust game on Monad. Split the pot, or take it all. Built for Monad Blitz Jogja.",
+  icons: { icon: "/tega-asset/tega-icon.png" },
+  openGraph: {
+    title: "TEGA: Split it. Or steal it.",
+    description: "A live on-chain trust game on Monad. Split it, or steal it.",
+    images: ["/tega-asset/tega-og.png"],
+  },
 };
 
 export default function RootLayout({
@@ -25,8 +32,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${orbitron.variable} ${oxanium.variable} scanlines antialiased`}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${orbitron.variable} ${oxanium.variable} bg-arcade scanlines min-h-screen antialiased`}>
         <Providers>{children}</Providers>
       </body>
     </html>

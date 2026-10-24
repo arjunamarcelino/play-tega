@@ -13,6 +13,21 @@ body {
   font-family: var(--font-ui);
 }
 
+/* Arcade backdrop — flat ink base. Identity comes from CRT scanlines + neon
+   accents + arena art, not a bg gradient. */
+.bg-arcade {
+  position: relative;
+  background-color: #07060d;
+}
+
+/* Pre-hide landing reveal targets ONLY when motion is enabled (set by the guarded
+   boot script). GSAP animates them in; the failsafe removes the class so content
+   is never left hidden. Nothing hides without JS or with reduced motion. */
+html.motion-ready [data-hero-group] > *,
+html.motion-ready [data-reveal] > * {
+  opacity: 0;
+}
+
 @layer components {
   .display {
     font-family: var(--font-display);
