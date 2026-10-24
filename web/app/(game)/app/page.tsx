@@ -10,7 +10,7 @@ import { Button, Chip, Panel } from "@/components/ui";
 import { AssetImg } from "@/components/AssetImg";
 import { assets } from "@/lib/assets";
 import { tegaAbi } from "@/lib/tega/abi";
-import { FAUCET_URL, IS_TEGA_CONFIGURED, TEGA_ADDRESS } from "@/lib/tega/constants";
+import { FAUCET_URL, HAS_FAUCET, IS_TEGA_CONFIGURED, TEGA_ADDRESS } from "@/lib/tega/constants";
 import { useStake, useStakeFlow, useUsdcBalance, useUsdcAllowance, describeError } from "@/lib/tega/hooks";
 import { useTegaActions } from "@/lib/tega/actions";
 import { useMyMatches } from "@/lib/tega/useMyMatches";
@@ -168,9 +168,11 @@ export default function Lobby() {
         <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-white/40">
           <span>Balance:</span>
           <span className="display neon-gold">{fmtUsdc(bal)} {CURRENCY}</span>
-          <a href={FAUCET_URL} target="_blank" rel="noopener noreferrer" className="text-mon hover:underline">
-            Mint USDC ↗
-          </a>
+          {HAS_FAUCET && (
+            <a href={FAUCET_URL} target="_blank" rel="noopener noreferrer" className="text-mon hover:underline">
+              Mint USDC ↗
+            </a>
+          )}
           <span className="text-white/30">· Allowance: {fmtUsdc(allowance.data as bigint | undefined)}</span>
         </div>
       </div>
@@ -195,9 +197,11 @@ export default function Lobby() {
           {!hasStake && (
             <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gold/50 bg-gold/10 px-4 py-3">
               <span className="text-sm text-white/80">You need at least {fmtUsdc(liveStake)} {CURRENCY} to play.</span>
-              <a href={FAUCET_URL} target="_blank" rel="noopener noreferrer">
-                <Button variant="gold">Mint test USDC ↗</Button>
-              </a>
+              {HAS_FAUCET && (
+                <a href={FAUCET_URL} target="_blank" rel="noopener noreferrer">
+                  <Button variant="gold">Mint test USDC ↗</Button>
+                </a>
+              )}
             </div>
           )}
 

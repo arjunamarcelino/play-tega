@@ -19,7 +19,7 @@ import { useTegaMatch } from "@/lib/tega/useTegaMatch";
 import { useTegaActions } from "@/lib/tega/actions";
 import { useStake, useStakeFlow, useUsdcBalance, describeError } from "@/lib/tega/hooks";
 import { Choice, Phase } from "@/lib/tega/types";
-import { COMMIT_WIN, REVEAL_WIN, FALLBACK_STAKE, FAUCET_URL, MIN_ROUNDS, IS_TEGA_CONFIGURED } from "@/lib/tega/constants";
+import { COMMIT_WIN, REVEAL_WIN, FALLBACK_STAKE, FAUCET_URL, HAS_FAUCET, MIN_ROUNDS, IS_TEGA_CONFIGURED } from "@/lib/tega/constants";
 import type { RoundResult } from "@/lib/tega/events";
 import { CURRENCY, anteOf, potOf, payoutOf, fmtUsdc, fmtDelta } from "@/lib/tega/format";
 
@@ -195,7 +195,7 @@ export default function PlayPage() {
                 {busy ? (joinPhase === "approving" ? "Approving stake…" : "Joining…") : "Join this table"}
               </Button>
               <p className="mt-2 text-xs text-white/40">Your {fmtUsdc(liveStake)} {CURRENCY} stake is approved automatically on join.</p>
-              {(balance.data as bigint | undefined) !== undefined && (balance.data as bigint) < liveStake && (
+              {HAS_FAUCET && (balance.data as bigint | undefined) !== undefined && (balance.data as bigint) < liveStake && (
                 <a href={FAUCET_URL} target="_blank" rel="noopener noreferrer" className="mt-2 block text-xs text-mon hover:underline">
                   Need test USDC? Mint ↗
                 </a>

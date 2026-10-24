@@ -5,7 +5,7 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { MuteButton } from "@/components/MuteButton";
 import { AssetImg } from "@/components/AssetImg";
 import { assets } from "@/lib/assets";
-import { FAUCET_URL } from "@/lib/tega/constants";
+import { FAUCET_URL, HAS_FAUCET } from "@/lib/tega/constants";
 
 export default function GameLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -28,9 +28,11 @@ export default function GameLayout({ children }: { children: React.ReactNode }) 
           <Link href="/app" className="text-xs uppercase tracking-widest text-white/40 hover:text-white/70">
             Lobby
           </Link>
-          <a href={FAUCET_URL} target="_blank" rel="noopener noreferrer" className="text-xs uppercase tracking-widest text-white/40 hover:text-white/70">
-            Mint USDC ↗
-          </a>
+          {HAS_FAUCET && (
+            <a href={FAUCET_URL} target="_blank" rel="noopener noreferrer" className="text-xs uppercase tracking-widest text-white/40 hover:text-white/70">
+              Mint USDC ↗
+            </a>
+          )}
         </div>
         <div className="flex items-center gap-3">
           <MuteButton />

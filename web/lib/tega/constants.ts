@@ -11,11 +11,23 @@ const envTega = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
 export const TEGA_ADDRESS: Address = envTega && isAddress(envTega) ? envTega : zeroAddress;
 export const IS_TEGA_CONFIGURED = TEGA_ADDRESS !== zeroAddress;
 
-/** devnads testnet USDC (6-dec) — the staked token on Monad testnet. */
-export const USDC_ADDRESS: Address = "0x56bf9CDc3C1876F3F22655a0016C2743E9e39a73";
-export const USDC_DECIMALS = 6;
+/**
+ * The staked token (USDC), per network — set via env so the same build targets
+ * testnet or mainnet. Defaults to devnads testnet USDC when unset. Both the
+ * testnet (`0x56bf…a73`) and mainnet (`0x7547…b603`) USDC are 6-dec.
+ */
+const envUsdc = process.env.NEXT_PUBLIC_USDC_ADDRESS;
+export const USDC_ADDRESS: Address =
+  envUsdc && isAddress(envUsdc) ? envUsdc : "0x56bf9CDc3C1876F3F22655a0016C2743E9e39a73";
+export const USDC_DECIMALS = Number(process.env.NEXT_PUBLIC_USDC_DECIMALS ?? 6);
 
-export const FAUCET_URL = "https://devnads.com/tokens";
+/**
+ * Faucet URL for test USDC. FAIL-CLOSED: empty unless `NEXT_PUBLIC_FAUCET_URL` is
+ * set, so production (no faucet env) shows no faucet UI, while dev/testnet opts in.
+ * Gate all faucet links on `HAS_FAUCET`.
+ */
+export const FAUCET_URL = process.env.NEXT_PUBLIC_FAUCET_URL ?? "";
+export const HAS_FAUCET = FAUCET_URL.trim() !== "";
 
 // ---- display-only fallbacks (Tega.sol:55-60) ----
 // NEVER use these in tx-building or balance math — read the live values via
