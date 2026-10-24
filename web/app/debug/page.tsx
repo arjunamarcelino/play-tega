@@ -23,7 +23,7 @@ import {
 } from "@/lib/tega/hooks";
 import { buildCommitHash, loadSalt, randomSalt32, saveSalt, sweepStaleSalts } from "@/lib/tega/commit";
 import { Choice, PHASE_LABEL, type PlayableChoice } from "@/lib/tega/types";
-import { FALLBACK_STAKE, FAUCET_URL, IS_TEGA_CONFIGURED, USDC_DECIMALS } from "@/lib/tega/constants";
+import { FAUCET_URL, IS_TEGA_CONFIGURED, USDC_DECIMALS } from "@/lib/tega/constants";
 
 const EXPLORER = monadTestnet.blockExplorers.default.url;
 const usdc = (v?: bigint) => (v === undefined ? "—" : `${formatUnits(v, USDC_DECIMALS)} USDC`);
@@ -62,8 +62,9 @@ export default function DebugPage() {
   const trust = useTrustScore((isAddress(trustAddr) ? trustAddr : undefined) as Address | undefined);
   const balance = useUsdcBalance(address);
   const allowance = useUsdcAllowance(address);
-  const stakeValue = (stake.data as bigint | undefined) ?? FALLBACK_STAKE;
-  const flow = useStakeFlow(stakeValue);
+  // Live STAKE only — never the display fallback in the approve/stake path (constants.ts invariant).
+  const liveStake = stake.data as bigint | undefined;
+  const flow = useStakeFlow(liveStake);
 
   // writes
   const tx = useTegaTx();
@@ -83,12 +84,13 @@ export default function DebugPage() {
 
   // ---- write actions (literal functionName keeps full typing) ----
   function approve() {
+    if (liveStake === undefined) return; // wait for the live STAKE read
     tx.writeContract({
       address: USDC_ADDRESS,
       abi: erc20Abi,
       chainId: monadTestnet.id,
       functionName: "approve",
-      args: [TEGA_ADDRESS, stakeValue], // exact STAKE (never MaxUint256)
+      args: [TEGA_ADDRESS, liveStake], // exact live STAKE (never MaxUint256, never the fallback)
     });
   }
   function createMatch() {
@@ -214,7 +216,7 @@ export default function DebugPage() {
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <Button variant="gold" onClick={approve} disabled={writesDisabled}>approve STAKE</Button>
+              <Button variant="gold" onClick={approve} disabled={writesDisabled || liveStake === undefined}>approve STAKE</Button>
               <Button variant="bagi" onClick={createMatch} disabled={writesDisabled || parseAddr(invited) === null}>createMatch</Button>
               <Button variant="bagi" onClick={joinMatch} disabled={writesDisabled || parsedMatchId === null}>joinMatch</Button>
               <Button onClick={commit} disabled={writesDisabled || parsedMatchId === null}>commit</Button>
