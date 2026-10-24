@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 
 /// @title TEGA — on-chain split-or-steal trust game
 /// @notice Two players each escrow a fixed STAKE of an ERC-20 (devnads test USDC, 6-dec),
@@ -16,17 +17,22 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 ///      - Designed for a standard, non-rebasing ERC-20. Stake pulls assert the exact STAKE was
 ///        received (`_pullStake`), so a fee-on-transfer token is rejected rather than silently
 ///        shorting escrow; a rebasing token is still unsupported.
-///      - `jackpot` (from mutual-steal rounds and double-forfeits) is intentionally NEVER
-///        distributed by this contract; those funds, and any match that never reaches
-///        Ended/Cancelled, are permanently locked (no admin sweep). This is by design
-///        (tournament-prize seeding happens off-chain, spec §8).
+///      - `jackpot` (from mutual-steal rounds and double-forfeits) is a prize pool spendable ONLY
+///        via `distributeJackpot`, gated to TREASURER_ROLE (intended: a multisig) and bounded to
+///        the jackpot balance — it can NEVER touch active-match escrow. Tournament winner
+///        selection + cadence stay off-chain (spec §8); on-chain only enforces pool integrity.
+///        A match that never reaches Ended/Cancelled is still only resolvable via permissionless
+///        `poke`; there is no escrow sweep.
 ///      - No code may compare `Phase` by ordinal (`<`/`>`); all comparisons are `==`, so the
 ///        appended `Cancelled` value is safe.
 ///      - Reverts use require-strings (not custom errors) intentionally: the test suite asserts
 ///        exact strings, and Solidity 0.8.24 cannot use custom errors inside `require`. Migrating
 ///        to custom errors is a possible future gas optimization.
-contract Tega is ReentrancyGuard {
+contract Tega is ReentrancyGuard, AccessControl {
     using SafeERC20 for IERC20;
+
+    /// @notice Role allowed to distribute the jackpot prize pool (intended: a multisig).
+    bytes32 public constant TREASURER_ROLE = keccak256("TREASURER_ROLE");
 
     // ---- types ----
     enum Choice { None, Bagi, Steal }
@@ -77,10 +83,15 @@ contract Tega is ReentrancyGuard {
     event GameEnded(uint256 id, int256 score1, int256 score2, bool endedRandom);
     event Claimed(uint256 id, address who, uint256 amount);
     event MatchCancelled(uint256 id);
+    event JackpotDistributed(address indexed to, uint256 amount);
 
-    /// @param _token the ERC-20 used for stake/payout (devnads test USDC, 6 decimals).
-    constructor(IERC20 _token) {
+    /// @param _token the ERC-20 used for stake/payout (devnads test USDC on testnet; real USDC on mainnet).
+    /// @param admin  holder of DEFAULT_ADMIN_ROLE + TREASURER_ROLE — intended to be a multisig.
+    constructor(IERC20 _token, address admin) {
+        require(admin != address(0), "zero admin");
         token = _token;
+        _grantRole(DEFAULT_ADMIN_ROLE, admin);
+        _grantRole(TREASURER_ROLE, admin);
     }
 
     /// @notice Ante for round `r` — linear: STAKE*r/36 (Σ weights r=1..8 = 36). Integer division
@@ -334,5 +345,19 @@ contract Tega is ReentrancyGuard {
     function trustScore(address p) external view returns (uint256) {
         uint256 total = uint256(coops[p]) + uint256(betrays[p]);
         return total == 0 ? 100 : (uint256(coops[p]) * 100) / total;
+    }
+
+    // ---- treasury ----
+
+    /// @notice Distribute part of the jackpot prize pool (e.g. tournament winnings). Gated to
+    ///         TREASURER_ROLE and strictly bounded to the `jackpot` balance, so this can NEVER
+    ///         draw on active-match escrow. Winner selection + cadence are decided off-chain.
+    /// @dev CEI: decrement jackpot before the transfer; nonReentrant for defense-in-depth.
+    function distributeJackpot(address to, uint256 amount) external onlyRole(TREASURER_ROLE) nonReentrant {
+        require(to != address(0), "zero to");
+        require(amount <= jackpot, "exceeds jackpot");
+        jackpot -= amount;
+        emit JackpotDistributed(to, amount);
+        token.safeTransfer(to, amount);
     }
 }
