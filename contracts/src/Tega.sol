@@ -7,7 +7,7 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 
 /// @title TEGA — on-chain split-or-steal trust game
-/// @notice Two players each escrow a fixed STAKE of an ERC-20 (devnads test USDC, 6-dec),
+/// @notice Two players each escrow a fixed STAKE of an ERC-20 USDC (6-dec),
 ///         then play multi-round commit-reveal. Each round they secretly pick BAGI (share)
 ///         or EMBAT (steal); the payoff matrix moves an escalating `ante` between them.
 ///         The game ends on a random endpoint (after MIN_ROUNDS) or at MAX_ROUNDS, and each
@@ -60,7 +60,7 @@ contract Tega is ReentrancyGuard, AccessControl {
     uint256 public constant STAKE      = 5_000_000;  // 5 USDC (6 decimals). Σ ante(1..8) = 4_999_996 (= STAKE − 4; truncation dust is paid to players, not trapped)
 
     // ---- storage ----
-    /// @notice The ERC-20 staked/paid out (devnads test USDC in production). Immutable: no SLOAD, cannot be reassigned.
+    /// @notice The ERC-20 staked/paid out — USDC, set per network at deploy. Immutable: no SLOAD, cannot be reassigned.
     IERC20 public immutable token;
 
     mapping(uint256 => Match) public matches;
@@ -86,7 +86,7 @@ contract Tega is ReentrancyGuard, AccessControl {
     event MatchCancelled(uint256 id);
     event JackpotDistributed(address indexed to, uint256 amount);
 
-    /// @param _token the ERC-20 used for stake/payout (devnads test USDC on testnet; real USDC on mainnet).
+    /// @param _token USDC used for stake/payout — testnet: devnads 0x56bf…a73; mainnet: 0x7547…b603.
     /// @param admin  holder of DEFAULT_ADMIN_ROLE + TREASURER_ROLE — intended to be a multisig.
     constructor(IERC20 _token, address admin) {
         require(admin != address(0), "zero admin");

@@ -116,4 +116,11 @@ forge fmt              # format
 forge script script/Deploy.s.sol:Deploy --rpc-url monad --account <keystore> --broadcast
 ```
 
-> Testnet token: devnads USDC `0x56bf9CDc3C1876F3F22655a0016C2743E9e39a73`. **Mainnet: use the real USDC address and `cast code`-verify it before deploy.**
+### Stake token (USDC) — passed to the constructor per network
+
+| Network | USDC address | Explorer |
+| --- | --- | --- |
+| Monad **testnet** (10143) | `0x56bf9CDc3C1876F3F22655a0016C2743E9e39a73` (devnads test USDC) | [testnet.monadvision.com](https://testnet.monadvision.com/token/0x56bf9CDc3C1876F3F22655a0016C2743E9e39a73) |
+| Monad **mainnet** (143) | `0x754704Bc059F8C67012fEd69BC8A327a5aafb603` | [monadvision.com](https://monadvision.com/token/0x754704Bc059F8C67012fEd69BC8A327a5aafb603) |
+
+Both verified on-chain: symbol `USDC`, **6 decimals** (so `STAKE = 5_000_000` = 5 USDC). `cast code`-verify before any deploy. On testnet, players claim devnads test USDC at [devnads.com/tokens](https://devnads.com/tokens) and approve it themselves; the contract never mints.

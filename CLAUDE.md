@@ -45,7 +45,7 @@ docs/        plans / reviews / solutions — GITIGNORED (local only, never commi
 ## Monad facts (verified Oct 2026)
 
 - Testnet **chainId 10143**, mainnet **chainId 143**. Native **MON = 18 decimals** (NOT 6). RPC `https://testnet-rpc.monad.xyz`. Explorer **MonadVision** `https://testnet.monadvision.com` (old `monadexplorer.com` 308-redirects). Monad charges gas on **gas_limit, not gas used** (set tight limits in the frontend).
-- Stake token: testnet **devnads USDC** `0x56bf9CDc3C1876F3F22655a0016C2743E9e39a73` (6-dec, EIP-2612 permit; claim at devnads.com/tokens). **Mainnet needs the real USDC address** — `cast code`-verify before deploy. Testnet was reset from genesis 2025-12-16.
+- Stake token (USDC, 6-dec, passed to constructor per network; both verified on-chain): testnet **devnads USDC** `0x56bf9CDc3C1876F3F22655a0016C2743E9e39a73` (claim at devnads.com/tokens); mainnet **USDC** `0x754704Bc059F8C67012fEd69BC8A327a5aafb603`. `cast code`-verify before deploy. (Testnet was reset from genesis 2025-12-16, so re-verify.)
 - **VRF on Monad: use Pyth Entropy** (mainnet `0xD458261E832415CFd3BAE5E416FdF3230ce6F134`, testnet `0x36825bf3Fbdf5a29E2d5148bfe7Dcf7B5639e320`). **Chainlink VRF and Switchboard are NOT on Monad** (Chainlink is price-feeds only). TEGA currently uses a free commit-hash/salt-based endpoint instead of VRF (see below).
 
 ## Contract: `contracts/src/Tega.sol`
