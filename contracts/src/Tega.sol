@@ -57,9 +57,8 @@ contract Tega is ReentrancyGuard {
     IERC20 public immutable token;
 
     mapping(uint256 => Match) public matches;
-    mapping(bytes32 => bytes32) public commitOf;   // key => commit hash
+    mapping(bytes32 => bytes32) public commitOf;   // key => commit hash (nonzero = committed; zero hash rejected)
     mapping(bytes32 => Choice)  public revealOf;   // key => revealed choice
-    mapping(bytes32 => bool)    public didCommit;  // key => committed this round?
 
     uint256 public nextId;
     uint256 public jackpot;                        // accrued, never distributed on-chain (see @dev)
@@ -147,12 +146,12 @@ contract Tega is ReentrancyGuard {
         require(m.phase == Phase.Commit, "not commit phase");
         require(block.timestamp <= m.deadline, "commit over");
         require(msg.sender == m.p1 || msg.sender == m.p2, "not player");
+        require(commitHash != bytes32(0), "bad commit");       // zero reserved as "not committed" sentinel
         bytes32 k = _key(id, m.round, msg.sender);
-        require(!didCommit[k], "already");
+        require(commitOf[k] == bytes32(0), "already");
         commitOf[k] = commitHash;
-        didCommit[k] = true;
         emit Committed(id, m.round, msg.sender);
-        if (didCommit[_key(id, m.round, m.p1)] && didCommit[_key(id, m.round, m.p2)]) {
+        if (commitOf[_key(id, m.round, m.p1)] != bytes32(0) && commitOf[_key(id, m.round, m.p2)] != bytes32(0)) {
             m.phase = Phase.Reveal;
             m.deadline = uint64(block.timestamp) + REVEAL_WIN;
         }
@@ -251,7 +250,11 @@ contract Tega is ReentrancyGuard {
         require(m.phase == Phase.Commit || m.phase == Phase.Reveal, "nothing to poke");
         require(block.timestamp > m.deadline, "not expired");
         if (m.phase == Phase.Commit) {
-            _penalize(id, didCommit[_key(id, m.round, m.p1)], didCommit[_key(id, m.round, m.p2)]);
+            _penalize(
+                id,
+                commitOf[_key(id, m.round, m.p1)] != bytes32(0),
+                commitOf[_key(id, m.round, m.p2)] != bytes32(0)
+            );
         } else {
             _penalize(
                 id,
