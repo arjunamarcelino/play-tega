@@ -66,9 +66,10 @@ contract Tega is ReentrancyGuard, AccessControl {
     mapping(uint256 => Match) public matches;
     mapping(bytes32 => bytes32) public commitOf;   // key => commit hash (nonzero = committed; zero hash rejected)
     mapping(bytes32 => Choice)  public revealOf;   // key => revealed choice
+    mapping(bytes32 => bytes32) public saltOf;     // key => revealed salt (feeds the grind-resistant endpoint seed)
 
     uint256 public nextId;
-    uint256 public jackpot;                        // accrued, never distributed on-chain (see @dev)
+    uint256 public jackpot;                        // prize pool, spendable only via distributeJackpot (see @dev)
 
     mapping(address => uint32) public coops;       // reputation: # of BAGI plays
     mapping(address => uint32) public betrays;     // reputation: # of EMBAT plays
@@ -194,6 +195,7 @@ contract Tega is ReentrancyGuard, AccessControl {
         );
         require(revealOf[k] == Choice.None, "revealed");
         revealOf[k] = choice;
+        saltOf[k] = salt;                                  // feeds the endpoint seed (salt was locked at commit)
         emit Revealed(id, m.round, msg.sender, choice);
         // caller just revealed — only the opponent's slot is still unknown
         bool isP1 = msg.sender == m.p1;
@@ -236,19 +238,20 @@ contract Tega is ReentrancyGuard, AccessControl {
     /// @dev Random endpoint (spec §6): decides whether the game ENDS after a round — rounds
     ///      MIN_ROUNDS..MAX_ROUNDS-1 each have an END_PROB% chance; always ends at MAX_ROUNDS.
     ///      Purpose: hide which round is last, breaking backward-induction unraveling.
-    ///      SEED = keccak256(both players' commit hashes, id, round), fixed at COMMIT time (before
-    ///      any reveal), so reveal-timing cannot grind the outcome. Documented residual: the second
-    ///      committer sees the first's commit hash and could grind their own salt to bias
-    ///      end/continue — but without knowing the round result (not yet revealed), so it is far
-    ///      weaker than reveal-grinding and acceptable for a low-stakes social game.
+    ///      SEED = keccak256(both players' revealed salts, id, round). Each salt is locked inside
+    ///      its commit hash at COMMIT time (hidden from the opponent) and only surfaces at reveal,
+    ///      so NEITHER player can grind it: the second committer can't bias against an unknown
+    ///      opponent salt, and a revealer's own salt is already fixed by their commit (they could
+    ///      preview the outcome but not change it — and stalling only forfeits). Grind-resistant
+    ///      without a VRF. (Called only after both reveal, so both salts are populated.)
     function _advance(uint256 id) internal {
         Match storage m = matches[id];
         bool last = m.round >= MAX_ROUNDS;
         bool rand = false;
         if (!last && m.round >= MIN_ROUNDS) {
             uint256 seed = uint256(keccak256(abi.encodePacked(
-                commitOf[_key(id, m.round, m.p1)],
-                commitOf[_key(id, m.round, m.p2)],
+                saltOf[_key(id, m.round, m.p1)],
+                saltOf[_key(id, m.round, m.p2)],
                 id,
                 m.round
             )));
