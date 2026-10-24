@@ -276,7 +276,9 @@ contract Tega is ReentrancyGuard {
             m.score1 = -int256(STAKE);
             betrays[m.p1]++;
         } else {                                              // both forfeit (C3/C5)
-            jackpot += uint256(2 * int256(STAKE) + m.score1 + m.score2); // 2*STAKE - J
+            int256 remaining = 2 * int256(STAKE) + m.score1 + m.score2; // 2*STAKE - J
+            require(remaining >= 0, "neg jackpot");            // future-proof: revert, never wrap
+            jackpot += uint256(remaining);
             m.score1 = -int256(STAKE);
             m.score2 = -int256(STAKE);
             betrays[m.p1]++;
