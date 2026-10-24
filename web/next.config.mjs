@@ -29,6 +29,9 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  // Emit a self-contained server bundle (.next/standalone/server.js) so the Docker
+  // runtime image needs only node + the traced deps — no full node_modules.
+  output: "standalone",
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

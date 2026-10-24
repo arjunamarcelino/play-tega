@@ -23,7 +23,7 @@ import {
 } from "@/lib/tega/hooks";
 import { buildCommitHash, loadSalt, randomSalt32, saveSalt, sweepStaleSalts } from "@/lib/tega/commit";
 import { Choice, PHASE_LABEL, type PlayableChoice } from "@/lib/tega/types";
-import { FAUCET_URL, IS_TEGA_CONFIGURED, USDC_DECIMALS } from "@/lib/tega/constants";
+import { FAUCET_URL, HAS_FAUCET, IS_TEGA_CONFIGURED, USDC_DECIMALS } from "@/lib/tega/constants";
 
 const EXPLORER = monadTestnet.blockExplorers.default.url;
 const usdc = (v?: bigint) => (v === undefined ? "—" : `${formatUnits(v, USDC_DECIMALS)} USDC`);
@@ -170,9 +170,11 @@ export default function DebugPage() {
             <Row label="USDC balance" value={usdc(balance.data as bigint | undefined)} />
             <Row label="Allowance → Tega" value={usdc(allowance.data as bigint | undefined)} />
             <Row label="Needs approval" value={flow.needsApproval ? "yes" : "no"} />
-            <a className="display text-xs text-gold underline-offset-4 hover:underline" href={FAUCET_URL} target="_blank" rel="noopener noreferrer">
-              Get test USDC ↗
-            </a>
+            {HAS_FAUCET && (
+              <a className="display text-xs text-gold underline-offset-4 hover:underline" href={FAUCET_URL} target="_blank" rel="noopener noreferrer">
+                Get test USDC ↗
+              </a>
+            )}
           </Panel>
 
           {/* reads */}

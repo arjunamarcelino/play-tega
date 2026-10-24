@@ -13,6 +13,21 @@ body {
   font-family: var(--font-ui);
 }
 
+/* Arcade backdrop — flat ink base. Identity comes from CRT scanlines + neon
+   accents + arena art, not a bg gradient. */
+.bg-arcade {
+  position: relative;
+  background-color: #07060d;
+}
+
+/* Pre-hide landing reveal targets ONLY when motion is enabled (set by the guarded
+   boot script). GSAP animates them in; the failsafe removes the class so content
+   is never left hidden. Nothing hides without JS or with reduced motion. */
+html.motion-ready [data-hero-group] > *,
+html.motion-ready [data-reveal] > * {
+  opacity: 0;
+}
+
 @layer components {
   .display {
     font-family: var(--font-display);
@@ -51,6 +66,56 @@ body {
     color: #ffd23f;
     text-shadow: 0 0 12px rgba(255, 210, 63, 0.75);
   }
+
+  /* Faint purple grid behind the arena HUD. */
+  .hud-grid {
+    background-image: linear-gradient(rgba(131, 110, 249, 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(131, 110, 249, 0.08) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+}
+
+/* 3D flip card (commit → reveal). `.flipped` rotates to show the front face. */
+.card3d {
+  perspective: 1000px;
+}
+.card3d-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.card3d-inner.flipped {
+  transform: rotateY(180deg);
+}
+.card3d-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+}
+.card3d-back {
+  transform: rotateY(180deg);
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-20vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(105vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+::selection {
+  background: rgba(131, 110, 249, 0.4);
 }
 
 /* Signature CRT scanlines overlay (the one kept texture). */

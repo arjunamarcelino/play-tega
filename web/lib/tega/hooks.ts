@@ -81,6 +81,7 @@ export function useTegaTx() {
   return {
     writeContract,
     hash,
+    receipt: receipt.data, // full TransactionReceipt once mined (logs for event decoding)
     isPending, // awaiting wallet signature / broadcast
     isMining: receipt.isLoading,
     isConfirmed: receipt.isSuccess,
