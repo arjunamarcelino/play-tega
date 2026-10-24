@@ -160,7 +160,9 @@ contract Tega is ReentrancyGuard {
         require(commitOf[k] == bytes32(0), "already");
         commitOf[k] = commitHash;
         emit Committed(id, m.round, msg.sender);
-        if (commitOf[_key(id, m.round, m.p1)] != bytes32(0) && commitOf[_key(id, m.round, m.p2)] != bytes32(0)) {
+        // caller just committed — only the opponent's slot is still unknown
+        bytes32 otherKey = msg.sender == m.p1 ? _key(id, m.round, m.p2) : _key(id, m.round, m.p1);
+        if (commitOf[otherKey] != bytes32(0)) {
             m.phase = Phase.Reveal;
             m.deadline = uint64(block.timestamp) + REVEAL_WIN;
         }
@@ -182,22 +184,19 @@ contract Tega is ReentrancyGuard {
         require(revealOf[k] == Choice.None, "revealed");
         revealOf[k] = choice;
         emit Revealed(id, m.round, msg.sender, choice);
-        if (
-            revealOf[_key(id, m.round, m.p1)] != Choice.None &&
-            revealOf[_key(id, m.round, m.p2)] != Choice.None
-        ) {
-            _resolveRound(id);
+        // caller just revealed — only the opponent's slot is still unknown
+        bool isP1 = msg.sender == m.p1;
+        Choice other = revealOf[isP1 ? _key(id, m.round, m.p2) : _key(id, m.round, m.p1)];
+        if (other != Choice.None) {
+            _resolveRound(id, m.round, isP1 ? choice : other, isP1 ? other : choice);
         }
     }
 
     /// @dev Apply the payoff matrix, update reputation, accrue jackpot, then advance/end.
     ///      Reputation follows spec §7: every BAGI → coops++, every EMBAT → betrays++ (uniform
     ///      per player each round — a betrayed cooperator still earns trust credit).
-    function _resolveRound(uint256 id) internal {
+    function _resolveRound(uint256 id, uint8 r, Choice c1, Choice c2) internal {
         Match storage m = matches[id];
-        uint8 r = m.round;
-        Choice c1 = revealOf[_key(id, r, m.p1)];
-        Choice c2 = revealOf[_key(id, r, m.p2)];
         int256 A = int256(ante(r));
         int256 d1;
         int256 d2;
